@@ -39,7 +39,7 @@ class BCScraper
             
             // Set cover image to 150x150.
             if (!is_null($cover)){
-                $cover = "http://f4.bcbits.com/img/a" . $cover[1] . "_7.jpg";
+                $cover = "https://f4.bcbits.com/img/a" . $cover[1] . "_7.jpg";
             }
             
             // Set track information.

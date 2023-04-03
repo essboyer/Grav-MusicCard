@@ -165,7 +165,7 @@ class MusicCard
                     
                 } else if (preg_match("/https:\/\/.*soundcloud\.com\/.*/i", $data[1], $result)) {
                     // Get Soundcloud track info.
-                    $track = $this->get_url('http://api.soundcloud.com/resolve?url=' . $result[0] . "&client_id=" . $soundcloudAPI["soundcloud_id"]);
+                    $track = $this->get_url('https://api.soundcloud.com/resolve?url=' . $result[0] . "&client_id=" . $soundcloudAPI["soundcloud_id"]);
                     $track = json_decode($track);
                     
                     $link = $track->permalink_url;
