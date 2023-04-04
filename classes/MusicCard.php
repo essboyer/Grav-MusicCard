@@ -20,70 +20,16 @@ use RocketTheme\Toolbox\Event\Event;
  */
 class MusicCard
 {
-    /**
-     * @var MusicCard
-     */
-        use GravTrait;
+
+    use GravTrait;
   
-    /** ---------------------------
-     * Private/protected properties
-     * ----------------------------
-     */
-  
-    /**
-     * A unique identifier
-     *
-     * @var string
-     */
     protected $id;
-  
-    /**
-     * A key-valued array used for hashing math formulas of a page
-     *
-     * @var array
-     */
     protected $hashes;
-  
-    /**
-     * @var array
-     */
     protected $config;
-  
-    /**
-     * @var array
-     */
     protected $assets = [];
-    
-    /**
-     * @var Grav\Plugin\MediaEmbed\Service
-     */
     protected $service;
-    
-    /**
-     * @var Grav\Plugin\MediaEmbed\ServiceProvider
-     */
     protected $services = [];
-  
-    /** -------------
-     * Public methods
-     * --------------
-     */
-  
-    /**
-     * Gets and sets the identifier for hashing.
-     *
-     * @param  string $var the identifier
-     *
-     * @return string      the identifier
-     */
-     public function id($var = null)
-     {
-        if ($var !== null) {
-            $this->id = $var;
-        }
-        return $this->id;
-     }
-    
+
     public function prepare($content, $id = '')
     {
         // Set unique identifier based on page content
@@ -131,10 +77,12 @@ class MusicCard
                     $accessToken = $session->getAccessToken();
                     $api->setAccessToken($accessToken);
 
+                    $tracks = array();
+
                     if (strcmp($type, "album") == 0) {
 
                         $album = $api->getAlbum($id);
-
+                        $tracks = $api->getAlbumTracks($id);
                         $cover = $album->images[1]->url;
                         $artist = $album->artists[0]->name;
                         $trackTitle = '';
@@ -155,7 +103,9 @@ class MusicCard
 
                     // Fix date formatting
                     $releaseDate = date("F Y", strtotime($releaseDate));
-                    
+
+                    $covers = array(); //TODO: add multiple sizes
+                    $credits = ''; //TODO: get credits
                     $source = "spotify";
                     
                 } else if (preg_match("/https:\/\/.*soundcloud\.com\/.*/i", $data[1], $result)) {
@@ -165,6 +115,9 @@ class MusicCard
                     
                     $link = $track->permalink_url;
                     $cover = preg_replace('/-large.jpg/', '-t300x300.jpg', $track->artwork_url);
+                    $covers = array(); //TODO: add multiple sizes. easy - see line above
+                    $credits = ''; //TODO: get credits
+                    $tracks = array(); //TODO: add tracks listing?
                     $artist = $track->user->username;
                     $trackTitle = $track->title;
                     
@@ -179,15 +132,20 @@ class MusicCard
                     
                     // Fix date formatting
                     $releaseDate = date("F Y", strtotime($releaseDate));
-                                        
+
                     $source = "soundcloud";
-                    
+                
                 } else if (preg_match("/http[s]?:\/\/.*\.bandcamp\.com\/(.+)\/.*/", $data[1], $results)) {
                     $bcscraper = new BCScraper();
-                    
+                    $type = $results[1];
+
                     $metadata = $bcscraper->scrape($results[0]);
                     $link = $metadata["url"];
                     $cover = $metadata["cover"];
+                    $covers = $metadata["covers"];
+                    $featuredTrack = $metadata["featuredTrack"];
+                    $tracks = $metadata["tracks"];
+                    $credits = $metadata["creditText"];
                     $artist = $metadata["artist"];
                     $trackTitle = $metadata["trackTitle"];
                     $albumTitle = $metadata["albumTitle"];
@@ -207,11 +165,16 @@ class MusicCard
                     'raw' => [
                         'link' => $link,
                         'cover' => $cover,
+                        'covers' => $covers,
                         'artist' => $artist,
                         'track_title' => $trackTitle,
                         'album_title' => $albumTitle,
                         'release_date' => $releaseDate,
-                        'source' => $source
+                        'source' => $source,
+                        'type' => $type,
+                        'credits' => $credits,
+                        'tracks' => $tracks,
+                        'featured_track' => $featuredTrack
                     ],
                 ];
 
@@ -336,6 +299,20 @@ class MusicCard
     public function addJs($assets, $append = true)
     {
         return $this->addAssets($assets, $append);
+    }
+
+
+    /**
+     * Gets and sets the identifier for hashing.
+     * @param  string $var the identifier
+     * @return string      the identifier
+     */
+    public function id($var = null)
+    {
+       if ($var !== null) {
+           $this->id = $var;
+       }
+       return $this->id;
     }
     
     /** -------------------------------

@@ -3,6 +3,8 @@
  * BCScraper
  *
  * Scrapes Bandcamp page for metadata.
+ * 
+ * works in Q2 of 2023
  *
  * This file is part of Music Card plugin
  */
@@ -11,14 +13,7 @@ namespace Grav\Plugin\MusicCard;
 
 class BCScraper
 {    
-    
-    /**
-     * Scrape metadata from Bandcamp
-     *
-     * @param  string $url URL of track or album
-     *
-     * @return array       Metadata object
-     */
+
     public function scrape($url)
     {
         // Test URL
@@ -28,47 +23,68 @@ class BCScraper
             // Get HTML
             $html = file_get_contents($url);
             // Get JSON containing all the data we need-THANKS BANDCAMP!! :)
+            // NOTE: structure differs between tracks and albums
             $album = $this->getJsonData($html);
-            $tracks = $album->track->itemListElement;
 
-            $albumTitle = $album->name;
             $artist = $album->byArtist->name;
             $cover= $album->image;
             $releaseDate = $album->datePublished; //TODO: make php date
-            $creditText = $album->creditText;
             $featuredTrackNum = $album->additionalProperty[1]->value;
-            $trackCount = $album->numTracks;
+            $trackCount = $album->numTracks ?? 1;
             
             $covers = array();
+            $tracks = array();
             $featuredTrack = array();
+            $trackTitle = '';
+            $creditText = '';
 
             // Create urls for sm m lg covers.
             if (!is_null($cover)) {
-                $covers["small"] = str_replace('_10', '_7', $cover);
-                $covers["medium"] = str_replace('_10', '_2', $cover);
-                $covers["large"] = $cover;
-                $cover = $covers["small"];
+                $covers = array(
+                    "small" => str_replace('_10', '_7', $cover),
+                    "medium" => str_replace('_10', '_2', $cover),
+                    "large" => $cover
+                );
             }
 
-            // Create featured track
-            if (!is_null($featuredTrackNum)) {
-                    $ftrak = $tracks[intval($featuredTrackNum) - 1]->item; // zero-index offset
-                    $featuredTrack["name"] = $ftrak->name;
-                    $featuredTrack["url"] = $ftrak->mainEntityOfPage;
-                    $featuredTrack["duration"] = $ftrak->duration;
-            }
+
+            // Album Specifics
+            if($type == 'album' ) {
+                $albumTracks = $album->track->itemListElement;
+                $albumTitle = $album->name;
+                $creditText = $album->creditText;
+
+                // Create tracks list
+                if (!is_null($albumTracks)) {
+                    $tracks = $this->getTracksMetadata($albumTracks);
+                }
+
+                // Create featured track
+                if (!is_null($featuredTrackNum)) {
+                        $ftrak = $albumTracks[intval($featuredTrackNum) - 1]->item; // zero-index offset
+                        $featuredTrack = array(
+                            "name" => $ftrak->name,
+                            "url" => $ftrak->mainEntityOfPage,
+                            "duration" => $ftrak->duration
+                        );
+                }
+
+            } elseif ($type == 'track') {
+                $albumTitle = $album->inAlbum->name;
+                $trackTitle = $album->name;
+            } 
            
             // Build Metadata object
             $metadata = array(
                 "type" => $type,
                 "url" => $url,
                 "artist" => $artist,
-                "trackTitle" => $featuredTrack["name"],
+                "trackTitle" => $trackTitle,
                 "albumTitle" => $albumTitle,
                 "cover" => $cover,
                 "covers" => $covers,
                 "releaseDate" => $releaseDate,
-                "tracks" => $this->getTracksMetadata($tracks),
+                "tracks" => $tracks,
                 "trackCount" => $trackCount,
                 "creditText" => $creditText,
                 "featuredTrack" => $featuredTrack
@@ -91,7 +107,8 @@ class BCScraper
                 array(
                     "track" => $position,
                     "name" => $track->name,
-                    "duration" => $track->duration
+                    "duration" => $track->duration,
+                    "url" => $track->mainEntityOfPage
                 ));
         }
 
