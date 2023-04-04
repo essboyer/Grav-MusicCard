@@ -122,8 +122,6 @@ class MusicCardPlugin extends Plugin
             // Get content
             $content = $page->getRawContent();
             
-            $pages = $this->grav['pages']->all();
-            $collection = new Collection();
             $spotifyAPI = array(
                 "spotify_id" => $this->config->get('plugins.musiccard.spotify_id'),
                 "spotify_secret" => $this->config->get('plugins.musiccard.spotify_secret'),
