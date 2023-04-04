@@ -22,46 +22,56 @@ class BCScraper
     public function scrape($url)
     {
         // Test URL
-        if (preg_match("/http[s]?:\/\/.*\.bandcamp\.com\/(.+)\/.*/", $url, $type)){
+        if (preg_match("/http[s]?:\/\/.*\.bandcamp\.com\/(.+)\/.*/", $url, $type)) {
             // Get Type (album or track)
             $type = $type[1];
             // Get HTML
             $html = file_get_contents($url);
+            // Get JSON containing all the data we need-THANKS BANDCAMP!! :)
+            $album = $this->getJsonData($html);
+            $tracks = $album->track->itemListElement;
 
-            // Get EmbedData and TralbumData
-            $embedData = $this->getEmbedData($html);
-            $tralbumData = $this->getTralbumData($html);
+            $albumTitle = $album->name;
+            $artist = $album->byArtist->name;
+            $cover= $album->image;
+            $releaseDate = $album->datePublished; //TODO: make php date
+            $creditText = $album->creditText;
+            $featuredTrackNum = $album->additionalProperty[1]->value;
+            $trackCount = $album->numTracks;
+            
+            $covers = array();
+            $featuredTrack = array();
 
-            // Find metadata values
-            preg_match('/artist[ ]?: "([^"]*)"/', $embedData, $artist);
-            preg_match('/album_title[ ]?: "([^"]*)"/', $embedData, $albumTitle);
-            preg_match('/art_id[ ]?: ([0-9]*)/', $embedData, $cover);
-            
-            // Set cover image to 150x150.
-            if (!is_null($cover)){
-                $cover = "https://f4.bcbits.com/img/a" . $cover[1] . "_7.jpg";
-            }
-            
-            // Set track information.
-            if (strcmp($type, "track") == 0) {
-                preg_match('/"title":"([^"]*)"/', $tralbumData, $trackTitle);
-                preg_match('/linkback[ ]?: "([^"]*)" \+ "([^"]*)"/', $embedData, $albumLink);
-                $html2 = file_get_contents($albumLink[1] . $albumLink[2]);
-                $tralbumData2 = $this->getTralbumData($html2);
-                preg_match('/album_release_date: "([^"]*)"/', $tralbumData2, $releaseDate);
-            } else {
-                preg_match('/album_release_date: "([^"]*)"/', $tralbumData, $releaseDate);
+            // Create urls for sm m lg covers.
+            if (!is_null($cover)) {
+                $covers["small"] = str_replace('_10', '_7', $cover);
+                $covers["medium"] = str_replace('_10', '_2', $cover);
+                $covers["large"] = $cover;
+                $cover = $covers["small"];
             }
 
+            // Create featured track
+            if (!is_null($featuredTrackNum)) {
+                    $ftrak = $tracks[intval($featuredTrackNum) - 1]->item; // zero-index offset
+                    $featuredTrack["name"] = $ftrak->name;
+                    $featuredTrack["url"] = $ftrak->mainEntityOfPage;
+                    $featuredTrack["duration"] = $ftrak->duration;
+            }
+           
             // Build Metadata object
             $metadata = array(
                 "type" => $type,
                 "url" => $url,
-                "artist" => $artist[1],
-                "trackTitle" => $trackTitle[1],
-                "albumTitle" => $albumTitle[1],
+                "artist" => $artist,
+                "trackTitle" => $featuredTrack["name"],
+                "albumTitle" => $albumTitle,
                 "cover" => $cover,
-                "releaseDate" => $releaseDate[1]
+                "covers" => $covers,
+                "releaseDate" => $releaseDate,
+                "tracks" => $this->getTracksMetadata($tracks),
+                "trackCount" => $trackCount,
+                "creditText" => $creditText,
+                "featuredTrack" => $featuredTrack
             );
 
             return $metadata;
@@ -69,36 +79,31 @@ class BCScraper
             echo "This is not a proper Bandcamp track or album URL";
         }
     }
-    
-    /**
-     * Get EmbedData JSON object
-     *
-     * @param  string $html Full HTML doc
-     *
-     * @return string       EmbedData
-     */
-    private function getEmbedData($html)
+
+    private function getTracksMetadata($items)
     {
-        $indexStart =  strpos($html, 'var EmbedData = {');
-        $indexFinish = strpos($html, '};', $indexStart);
-        $length = $indexFinish - $indexStart;
-        $embedData = substr($html, $indexStart, $length);
-        return $embedData;
+        $tracksMetadata = array();
+
+        foreach($items as $item) {
+            $position = $item->position;
+            $track = $item->item;
+            array_push($tracksMetadata,
+                array(
+                    "track" => $position,
+                    "name" => $track->name,
+                    "duration" => $track->duration
+                ));
+        }
+
+        return $tracksMetadata;
     }
     
-    /**
-     * Get TralbumData JSON object
-     *
-     * @param  string $html Full HTML doc
-     *
-     * @return string       TralbumData
-     */
-    private function getTralbumData($html)
+    private function getJsonData($html)
     {
-        $indexStart =  strpos($html, 'var TralbumData = {');
-        $indexFinish = strpos($html, '};', $indexStart);
-        $length = $indexFinish - $indexStart;
-        $tralbumData = substr($html, $indexStart, $length);
-        return $tralbumData;
+        $startPhrase='<script type="application/ld+json">';
+        $indexStart  =  strpos($html, $startPhrase)  + strlen($startPhrase);
+        $indexFinish = strpos($html, '</script>', $indexStart);
+        $jsonData = substr($html, $indexStart, ($indexFinish - $indexStart));
+        return json_decode(trim($jsonData));
     }
 }
