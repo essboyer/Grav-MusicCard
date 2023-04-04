@@ -10,7 +10,6 @@ class ComposerStaticInit564114ae508f645b879e7585b389c294
         'S' => 
         array (
             'SpotifyWebAPI\\' => 14,
-            'SoundCloud\\' => 11,
         ),
     );
 
@@ -19,10 +18,10 @@ class ComposerStaticInit564114ae508f645b879e7585b389c294
         array (
             0 => __DIR__ . '/..' . '/jwilsson/spotify-web-api-php/src',
         ),
-        'SoundCloud\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/glenscott/soundcloud/src',
-        ),
+    );
+
+    public static $classMap = array (
+        'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
@@ -30,6 +29,7 @@ class ComposerStaticInit564114ae508f645b879e7585b389c294
         return \Closure::bind(function () use ($loader) {
             $loader->prefixLengthsPsr4 = ComposerStaticInit564114ae508f645b879e7585b389c294::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInit564114ae508f645b879e7585b389c294::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit564114ae508f645b879e7585b389c294::$classMap;
 
         }, null, ClassLoader::class);
     }

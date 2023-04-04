@@ -2,8 +2,8 @@
 ************************/
 
 .music-card {
-    float: right;
-    clear: right;
+    /*float: right;
+    clear: right;*/
     margin: 10px 0 10px 15px;
     width: 150px; }
 

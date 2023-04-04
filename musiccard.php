@@ -124,7 +124,6 @@ class MusicCardPlugin extends Plugin
             
             $pages = $this->grav['pages']->all();
             $collection = new Collection();
-            $albumreviews = $collection->append($pages->ofType('albumreview'));
             $spotifyAPI = array(
                 "spotify_id" => $this->config->get('plugins.musiccard.spotify_id'),
                 "spotify_secret" => $this->config->get('plugins.musiccard.spotify_secret'),
@@ -138,7 +137,7 @@ class MusicCardPlugin extends Plugin
             
             // Apply MusicCard filter and save modified page content
             $page->setRawContent(
-                $this->musiccard->process($content, $config, $albumreviews, $spotifyAPI, $soundcloudAPI)
+                $this->musiccard->process($content, $config, $spotifyAPI, $soundcloudAPI)
             );
         }
     }
@@ -173,9 +172,6 @@ class MusicCardPlugin extends Plugin
             $this->grav['assets']
                  ->add('plugin://musiccard/assets/js/music-card.js');
         }
-        // Register built-in font assets
-        $this->grav['assets']
-             ->add('plugin://musiccard/assets/fonts/css/logos.css');
         
         // Register assets from MusicCard Services
         $assets = $this->musiccard->getAssets();

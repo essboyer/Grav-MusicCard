@@ -105,7 +105,7 @@ class MusicCard
         return $content;
     }
     
-	public function process($content, $config = [], $reviews, $spotifyAPI, $soundcloudAPI)
+	public function process($content, $config = [], $spotifyAPI, $soundcloudAPI)
     {           
         /** @var Twig $twig */
         $twig = self::getGrav()['twig'];
@@ -115,7 +115,7 @@ class MusicCard
 
         $content = preg_replace_callback(
             '~musiccard::([0-9a-z]+)::([0-9]+)::M~i',
-            function($match) use ($twig, &$uid, $config, $reviews, $spotifyAPI, $soundcloudAPI) {
+            function($match) use ($twig, &$uid, $config, $spotifyAPI, $soundcloudAPI) {
                 
                 list($embed, $data) = $this->hashes[$match[0]];
                 
@@ -137,6 +137,7 @@ class MusicCard
 
                         $cover = $album->images[1]->url;
                         $artist = $album->artists[0]->name;
+                        $trackTitle = '';
                         $albumTitle = $album->name;
                         $releaseDate = $album->release_date;
 
@@ -150,12 +151,6 @@ class MusicCard
                         $trackTitle = $track->name;
                         $albumTitle = $album->name;
                         $releaseDate = $album->release_date;
-                    }
-
-                    // Copy the image file locally to avoid Cross-Origin issues
-                    $localCover = "user/pages/albums/images/" . $artist . " - " . $albumTitle . ".jpeg";        
-                    if (!(file_exists($localCover))) {
-                        file_put_contents($localCover, file_get_contents($cover));
                     }
 
                     // Fix date formatting
@@ -185,12 +180,6 @@ class MusicCard
                     // Fix date formatting
                     $releaseDate = date("F Y", strtotime($releaseDate));
                                         
-                    // Copy the image file locally to avoid Cross-Origin issues
-                    $localCover = "user/pages/albums/images/" . $artist . " - " . $albumTitle . ".jpeg";        
-                    if (!(file_exists($localCover))) {
-                        file_put_contents($localCover, file_get_contents($cover));
-                    }
-                    
                     $source = "soundcloud";
                     
                 } else if (preg_match("/http[s]?:\/\/.*\.bandcamp\.com\/(.+)\/.*/", $data[1], $results)) {
@@ -207,12 +196,7 @@ class MusicCard
                     
                     // Fix date formatting
                     $releaseDate = date("F Y", strtotime($releaseDate));
-                                        
-                    // Copy the image file locally to avoid Cross-Origin issues
-                    $localCover = "user/pages/albums/images/" . $artist . " - " . $albumTitle . ".jpeg";        
-                    if (!(file_exists($localCover))) {
-                        file_put_contents($localCover, file_get_contents($cover));
-                    }                
+                    
                 }
                 
                 $musiccard = [
@@ -222,7 +206,7 @@ class MusicCard
 
                     'raw' => [
                         'link' => $link,
-                        'cover' => '/' . $localCover,
+                        'cover' => $cover,
                         'artist' => $artist,
                         'track_title' => $trackTitle,
                         'album_title' => $albumTitle,
@@ -248,8 +232,7 @@ class MusicCard
      * Fires an event with optional parameters.
      *
      * @param  string $eventName The name of the event.
-     * @param  Event  $event     Optional parameter to be passed to the
-     *                           called methods.
+     * @param  Event  $event     Optional parameter to be passed to thevcalled methods.
      * @return Event
      */
     
