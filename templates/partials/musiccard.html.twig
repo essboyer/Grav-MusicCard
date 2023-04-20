@@ -28,15 +28,7 @@
             <p> {{ musiccard.raw.release_date }} </p>
         </div>
         <div class="music-source">
-            {% if musiccard.raw.source == 'spotify' %}
-            <i class="fab fa-spotify"></i>
-            {% endif %}
-            {% if musiccard.raw.source == 'soundcloud' %}
-            <i class="fab fa-soundcloud"></i>
-            {% endif %}
-            {% if musiccard.raw.source == 'bandcamp' %}
-            <i class="fab fa-bandcamp"></i>
-            {% endif %}
+            <i class="fab fa-{{ musiccard.raw.source }}"></i>
         </div>
     </div>
 </div>
